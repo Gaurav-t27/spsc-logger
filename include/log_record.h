@@ -15,9 +15,10 @@ public:
         OFF   = 5,
     };
 
+    constexpr Level() noexcept : value_(Value::TRACE) {}
     constexpr Level(Value v) noexcept : value_(v) {}
 
-    constexpr const char* to_string() const noexcept {
+    constexpr const char* toString() const noexcept {
         switch (value_) {
             case Value::TRACE: return "TRACE";
             case Value::DEBUG: return "DEBUG";

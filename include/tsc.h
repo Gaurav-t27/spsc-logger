@@ -56,7 +56,7 @@ public:
             return { tsc1, ns1, ns_per_tsc };
         }
 
-        uint64_t to_ns(uint64_t tsc) const noexcept {
+        uint64_t toNs(uint64_t tsc) const noexcept {
             return ns_base +
                    static_cast<uint64_t>((tsc - tsc_base) * ns_per_tsc);
         }
