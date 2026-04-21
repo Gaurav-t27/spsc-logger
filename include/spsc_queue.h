@@ -64,8 +64,8 @@ public:
 
     template<typename Fn>
     size_t consumeAll(Fn&& fn) noexcept {
-        size_t t     = tail_.load(std::memory_order_relaxed);
-        size_t h     = head_.load(std::memory_order_acquire);
+        size_t t = tail_.load(std::memory_order_relaxed);
+        size_t h = head_.load(std::memory_order_acquire);
         size_t count = h - t;
 
         for (size_t i = 0; i < count; ++i)

@@ -37,7 +37,7 @@ public:
                       "Log arguments must be trivially copyable or const char*. "
                       "std::string and similar heap-owning types are not supported.");
 
-        if (ARG_BUF_SIZE - pos < sizeof(DT)) return;  // not enough room — skip
+        if (static_cast<size_t>(ARG_BUF_SIZE - pos) < sizeof(DT)) return;  // not enough room — skip
 
         std::memcpy(buf + pos, &val, sizeof(DT));
         pos += static_cast<uint8_t>(sizeof(DT));
@@ -63,7 +63,7 @@ std::decay_t<T> decodeOne(const char* buf, size_t& pos) noexcept {
 }
 
 template<typename... Args>
-std::tuple<Args...> decodeAll(const char* buf, size_t& pos) noexcept {
+std::tuple<Args...> decodeAll([[maybe_unused]] const char* buf, [[maybe_unused]] size_t& pos) noexcept {
     return std::tuple<Args...>{ decodeOne<Args>(buf, pos)... };
 }
 

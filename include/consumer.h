@@ -10,47 +10,38 @@ namespace logger {
 class Consumer {
 public:
 
-    static constexpr size_t LINE_BUF_SIZE = 512;  // max formatted line length
+    static constexpr size_t LINE_BUF_SIZE = 512;
 
-    explicit Consumer(FILE* out = stderr) noexcept : out_(out) {}
+    explicit Consumer(FILE* out = stderr)
+        : out_(out),
+          cal_(Tsc::Calibration::measure()) {
+        running_.store(true, std::memory_order_relaxed);
+        thread_ = std::thread(&Consumer::drainLoop, this);
+    }
 
     Consumer(const Consumer&)            = delete;
     Consumer& operator=(const Consumer&) = delete;
 
     ~Consumer() {
-        if (running_.load(std::memory_order_relaxed))
-            stop();
-    }
-
-    void start() {
-        cal_    = Tsc::Calibration::measure();
-        running_.store(true, std::memory_order_relaxed);
-        thread_ = std::thread(&Consumer::drainLoop, this);
-    }
-
-    void stop() {
-        running_.store(false, std::memory_order_relaxed);
-        if (thread_.joinable())
-            thread_.join();
+        if (running_.exchange(false, std::memory_order_relaxed)) {
+            if(thread_.joinable())
+                thread_.join();
+        }
     }
 
 private:
 
-    // Main loop running on the consumer thread.
     void drainLoop() noexcept {
-        Logger::Queue& q = Logger::instance().queue();
-
         while (running_.load(std::memory_order_relaxed)) {
-            size_t n = q.consumeAll([this](const Record& r) noexcept {
+            size_t n = Logger::instance().drainAll([this](const Record& r) noexcept {
                 formatAndWrite(r);
             });
 
             if (n == 0)
-                std::this_thread::yield();  // nothing in queue — give up timeslice
+                std::this_thread::yield();
         }
 
-        // Final drain — pick up any records pushed after the last loop iteration.
-        q.consumeAll([this](const Record& r) noexcept {
+        Logger::instance().drainAll([this](const Record& r) noexcept {
             formatAndWrite(r);
         });
     }
@@ -74,7 +65,7 @@ private:
     }
 
     FILE* out_;
-    Tsc::Calibration cal_{};
+    Tsc::Calibration cal_;
     std::atomic<bool> running_{false};
     std::thread thread_;
 };
